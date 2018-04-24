@@ -26,6 +26,9 @@ import pyrouge
 import util
 import logging
 import numpy as np
+import sys
+
+from attention_plugin.attention_summary import input_pb, output_pb, attention_pb 
 
 FLAGS = tf.app.flags.FLAGS
 
@@ -49,6 +52,7 @@ class BeamSearchDecoder(object):
     self._vocab = vocab
     self._saver = tf.train.Saver() # we use this to load checkpoints for decoding
     self._sess = tf.Session(config=util.get_config())
+    self._writer = tf.summary.FileWriter('/tmp/attention_test')
 
     # Load an initial checkpoint to use for decoding
     ckpt_path = util.load_ckpt(self._saver, self._sess)
@@ -181,6 +185,14 @@ class BeamSearchDecoder(object):
         'abstract_str': make_html_safe(abstract),
         'attn_dists': attn_dists
     }
+
+    input_summary = input_pb('attention', to_write['article_lst'])
+    output_summary = output_pb('attention', to_write['decoded_lst'])
+    attn_summary = attention_pb('attention', to_write['attn_dists'])
+    self._writer.add_summary(input_summary)
+    self._writer.add_summary(output_summary)
+    self._writer.add_summary(attn_summary)
+
     if FLAGS.pointer_gen:
       to_write['p_gens'] = p_gens
     output_fname = os.path.join(self._decode_dir, 'attn_vis_data.json')

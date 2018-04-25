@@ -53,6 +53,7 @@ class BeamSearchDecoder(object):
     self._saver = tf.train.Saver() # we use this to load checkpoints for decoding
     self._sess = tf.Session(config=util.get_config())
     self._writer = tf.summary.FileWriter('/tmp/attention_test')
+    self._counter = 0
 
     # Load an initial checkpoint to use for decoding
     ckpt_path = util.load_ckpt(self._saver, self._sess)
@@ -196,8 +197,21 @@ class BeamSearchDecoder(object):
     if FLAGS.pointer_gen:
       to_write['p_gens'] = p_gens
     output_fname = os.path.join(self._decode_dir, 'attn_vis_data.json')
-    with open(output_fname, 'w') as output_file:
-      json.dump(to_write, output_file)
+
+    if (self._counter == 0):
+      with open(output_fname, 'w') as output_file:
+        json.dump([to_write], output_file)
+    else:
+      existing = None
+      with open(output_fname, 'r') as existing:
+        existing = json.load(existing)
+        existing.append(to_write)
+      with open(output_fname, 'w') as output_file:
+        json.dump(existing, output_file)
+
+    self._counter += 1
+
+
     tf.logging.info('Wrote visualization data to %s', output_fname)
 
 
